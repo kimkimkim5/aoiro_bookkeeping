@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>青色申告 複式簿記</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --bg-card: #ffffff;
+    --bg-soft: #faf8f3;
+    --text: #1a1a1a;
+    --text-muted: #6b6b6b;
+    --border: #e5e0d5;
+    --border-strong: #c8bfa8;
+    --accent: #1e3a5f;       /* 藍 */
+    --accent-soft: #e9edf3;
+    --success: #2f6b3a;
+    --danger: #a83232;
+    --warning: #b87333;
+    --serif: 'Noto Serif JP', serif;
+    --sans: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+    --s1: 6px; --s2: 10px; --s3: 16px; --s4: 24px; --s5: 32px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #171512;
+      --bg-card: #1f1d1a;
+      --bg-soft: #26231f;
+      --text: #ece8de;
+      --text-muted: #a09a8d;
+      --border: #35322c;
+      --border-strong: #504a3f;
+      --accent: #9bb5d6;
+      --accent-soft: #26303d;
+      --success: #7fb388;
+      --danger: #d97878;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.55;
+    font-variant-numeric: tabular-nums;
+  }
+  h1, h2, h3, .num { font-family: var(--serif); }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* Header */
+  .header {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: var(--s3) var(--s4);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--s3);
+  }
+  .brand { display: flex; align-items: center; gap: var(--s2); }
+  .brand-mark {
+    width: 32px; height: 32px; border-radius: 4px;
+    background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-weight: 700; font-size: 18px;
+  }
+  .brand-title { font-family: var(--serif); font-weight: 700; font-size: 18px; }
+  .brand-sub { font-size: 11px; color: var(--text-muted); letter-spacing: 0.05em; }
+  .fy-selector { display: flex; align-items: center; gap: var(--s2); }
+  .fy-selector select {
+    padding: 6px 10px; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text);
+    border-radius: 4px; font-family: inherit; font-size: 13px;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 2px;
+    padding: 0 var(--s4);
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 12px 18px;
+    border: 0; background: none;
+    color: var(--text-muted); font-family: inherit; font-size: 13px;
+    font-weight: 500; cursor: pointer;
+    border-bottom: 2px solid transparent;
+    display: flex; align-items: center; gap: 6px;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab svg { width: 15px; height: 15px; }
+
+  /* Layout */
+  .container { padding: var(--s4); max-width: 1400px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  /* Cards */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: var(--s4);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .card + .card { margin-top: var(--s3); }
+  .card h2 {
+    margin: 0 0 var(--s3) 0;
+    font-size: 16px; font-weight: 700;
+    padding-bottom: var(--s2);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card h3 { margin: var(--s3) 0 var(--s2) 0; font-size: 14px; font-weight: 600; }
+
+  /* KPI grid */
+  .kpi-grid {
+    display: grid; gap: var(--s3);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    margin-bottom: var(--s3);
+  }
+  .kpi {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 6px; padding: var(--s3) var(--s4);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .kpi-label { font-size: 11px; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .kpi-value { font-family: var(--serif); font-weight: 700; font-size: 28px; margin-top: 4px; }
+  .kpi-value.pos { color: var(--success); }
+  .kpi-value.neg { color: var(--danger); }
+  .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Grid */
+  .grid-2 { display: grid; gap: var(--s3); grid-template-columns: 1fr 1fr; }
+  @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* Templates buttons */
+  .template-category { margin-bottom: var(--s4); }
+  .template-category h3 {
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-muted); margin: 0 0 var(--s2) 0;
+  }
+  .template-grid {
+    display: grid; gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  .template-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit; font-size: 13px; color: var(--text);
+    transition: all 120ms;
+    display: flex; flex-direction: column; gap: 6px;
+    min-height: 68px;
+  }
+  .template-btn:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    transform: translateY(-1px);
+  }
+  .template-btn .tpl-icon {
+    width: 24px; height: 24px;
+    border-radius: 4px; background: var(--bg-soft);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+  }
+  .template-btn .tpl-icon svg { width: 14px; height: 14px; }
+  .template-btn .tpl-label { font-weight: 500; }
+  .template-btn .tpl-detail { font-size: 10px; color: var(--text-muted); }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(20,18,15,0.55);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100; padding: var(--s3);
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--bg-card); border-radius: 8px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    max-width: 480px; width: 100%;
+    padding: var(--s4);
+  }
+  .modal h3 { margin: 0 0 var(--s3) 0; font-family: var(--serif); font-size: 18px; }
+  .field { margin-bottom: var(--s3); }
+  .field label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 4px;
+    background: var(--bg-card); color: var(--text);
+    font-family: inherit; font-size: 14px;
+  }
+  .field input:focus, .field select:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .journal-preview {
+    background: var(--bg-soft); border-radius: 4px; padding: var(--s2) var(--s3);
+    font-family: var(--serif); font-size: 13px; margin: var(--s2) 0;
+    border-left: 3px solid var(--accent);
+  }
+  .journal-preview .row { display: flex; justify-content: space-between; padding: 4px 0; }
+  .journal-preview .lbl { color: var(--text-muted); font-family: var(--sans); font-size: 11px; }
+
+  .btn {
+    padding: 8px 16px; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text);
+    border-radius: 4px; cursor: pointer;
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    transition: all 120ms;
+  }
+  .btn:hover { background: var(--bg-soft); }
+  .btn-primary {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+  .btn-primary:hover { opacity: 0.9; background: var(--accent); }
+  .btn-danger { color: var(--danger); border-color: var(--danger); }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: var(--s3); }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table.ledger {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  table.ledger th {
+    text-align: left; padding: 10px 8px;
+    background: var(--bg-soft);
+    border-bottom: 2px solid var(--border-strong);
+    font-weight: 600; color: var(--text-muted);
+    font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;
+    position: sticky; top: 0;
+  }
+  table.ledger td {
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.ledger tr:hover td { background: var(--bg-soft); }
+  table.ledger td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.ledger td.debit { color: var(--text); }
+  table.ledger td.credit { color: var(--text); }
+  table.ledger .date { white-space: nowrap; color: var(--text-muted); font-size: 12px; }
+  table.ledger .desc { max-width: 300px; }
+  table.ledger .del { cursor: pointer; color: var(--text-muted); }
+  table.ledger .del:hover { color: var(--danger); }
+
+  /* P/L, B/S report layout */
+  .report {
+    background: #fff;
+    color: #1a1a1a;
+    border: 1px solid var(--border-strong);
+    padding: 32px 40px;
+    font-family: var(--serif);
+    max-width: 720px; margin: 0 auto;
+  }
+  @media (prefers-color-scheme: dark) {
+    .report { background: #f7f5f0; }
+  }
+  .report-header { text-align: center; margin-bottom: var(--s4); border-bottom: 2px double #1a1a1a; padding-bottom: var(--s3); }
+  .report-title { font-size: 22px; font-weight: 700; letter-spacing: 0.1em; }
+  .report-sub { font-size: 12px; color: #555; margin-top: 6px; font-family: var(--sans); }
+  .report table { width: 100%; border-collapse: collapse; font-family: var(--sans); }
+  .report td, .report th { padding: 8px 12px; border-bottom: 1px solid #d5cfbf; font-size: 13px; }
+  .report td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--serif); }
+  .report .section-title { background: #ede7d5; font-weight: 700; padding: 8px 12px; margin-top: var(--s3); font-size: 13px; letter-spacing: 0.05em; }
+  .report tr.total td { border-top: 2px solid #1a1a1a; border-bottom: 2px solid #1a1a1a; font-weight: 700; }
+  .report .signature { margin-top: var(--s4); font-size: 12px; color: #555; text-align: right; font-family: var(--sans); }
+
+  /* Bank import */
+  #bank-textarea {
+    width: 100%; min-height: 200px; padding: var(--s2);
+    border: 1px solid var(--border); border-radius: 4px;
+    background: var(--bg-soft); color: var(--text);
+    font-family: 'SF Mono', Monaco, monospace; font-size: 12px;
+  }
+  .bank-preview-row {
+    display: grid; grid-template-columns: 90px 1fr 100px 100px 160px 60px;
+    gap: 8px; padding: 8px; border-bottom: 1px solid var(--border);
+    align-items: center; font-size: 12px;
+  }
+  .bank-preview-row.header { font-weight: 600; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; background: var(--bg-soft); }
+  .bank-preview-row select { padding: 4px 6px; font-size: 12px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); border-radius: 3px; width: 100%; }
+  .bank-preview-row .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 500; }
+  .bank-preview-row .badge.in { background: rgba(47,107,58,0.15); color: var(--success); }
+  .bank-preview-row .badge.out { background: rgba(168,50,50,0.15); color: var(--danger); }
+
+  /* Loading / empty */
+  .loading { text-align: center; padding: var(--s5); color: var(--text-muted); font-size: 13px; }
+  .empty { text-align: center; padding: var(--s5); color: var(--text-muted); font-size: 13px; }
+  .empty svg { width: 40px; height: 40px; opacity: 0.4; margin-bottom: var(--s2); }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--text); color: var(--bg);
+    padding: 10px 18px; border-radius: 4px;
+    font-size: 13px; z-index: 200;
+    opacity: 0; transform: translateY(10px);
+    transition: all 200ms;
+  }
+  .toast.show { opacity: 1; transform: none; }
+  .toast.error { background: var(--danger); color: #fff; }
+
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: var(--s3); }
+  .toolbar input[type="date"] { padding: 6px 8px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); border-radius: 4px; font-size: 13px; }
+  .spacer { flex: 1; }
+
+  /* Opening balance */
+  .ob-table { width: 100%; }
+  .ob-table tr td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  .ob-table input { width: 140px; text-align: right; padding: 4px 8px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); border-radius: 3px; font-family: inherit; font-variant-numeric: tabular-nums; }
+
+  @media print {
+    .header, .tabs, .toolbar, .btn { display: none !important; }
+    body { background: #fff; }
+    .card { border: none; box-shadow: none; padding: 0; }
+    .report { border: 1px solid #000; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="brand">
+    <div class="brand-mark">簿</div>
+    <div>
+      <div class="brand-title">青色申告 複式簿記</div>
+      <div class="brand-sub">FREELANCE BOOKKEEPING · 65万円控除対応</div>
+    </div>
+  </div>
+  <div class="fy-selector">
+    <label style="font-size:12px;color:var(--text-muted);">会計年度</label>
+    <select id="fy-select">
+      <option value="2026">令和8年（2026）</option>
+      <option value="2025">令和7年（2025）</option>
+    </select>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="dashboard"><i data-lucide="layout-dashboard"></i>ダッシュボード</button>
+  <button class="tab" data-tab="simple"><i data-lucide="zap"></i>簡単入力</button>
+  <button class="tab" data-tab="bank"><i data-lucide="landmark"></i>銀行明細取込</button>
+  <button class="tab" data-tab="journal"><i data-lucide="book-open"></i>仕訳帳</button>
+  <button class="tab" data-tab="ledger"><i data-lucide="book-marked"></i>総勘定元帳</button>
+  <button class="tab" data-tab="pl"><i data-lucide="trending-up"></i>損益計算書</button>
+  <button class="tab" data-tab="bs"><i data-lucide="scale"></i>貸借対照表</button>
+  <button class="tab" data-tab="settings"><i data-lucide="settings"></i>設定</button>
+</div>
+
+<div class="container">
+
+  <!-- Dashboard -->
+  <div class="panel active" id="panel-dashboard">
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label">売上高</div>
+        <div class="kpi-value pos" id="kpi-revenue">¥ 0</div>
+        <div class="kpi-sub" id="kpi-revenue-sub">当期</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">経費合計</div>
+        <div class="kpi-value neg" id="kpi-expense">¥ 0</div>
+        <div class="kpi-sub" id="kpi-expense-sub">当期</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">当期純利益</div>
+        <div class="kpi-value" id="kpi-income">¥ 0</div>
+        <div class="kpi-sub">= 売上 − 経費（控除前）</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">仕訳数</div>
+        <div class="kpi-value" id="kpi-entries">0</div>
+        <div class="kpi-sub">件</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>月次損益</h2>
+      <div style="height: 300px;"><canvas id="monthly-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>65万円控除の要件チェック</h2>
+      <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.9;">
+        <li><b>複式簿記による記帳</b> — 本アプリの仕訳データは借方＝貸方が常に一致</li>
+        <li><b>貸借対照表・損益計算書の提出</b> — 「損益計算書」「貸借対照表」タブから出力可能</li>
+        <li><b>電子申告 (e-Tax) または電子帳簿保存</b> — 別途 e-Tax での申告が必要</li>
+        <li><b>期限内申告</b> — 翌年3月15日まで</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Simple input -->
+  <div class="panel" id="panel-simple">
+    <div class="card">
+      <h2>簡単入力 — カードを選ぶだけで仕訳</h2>
+      <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--s3) 0;">
+        よくある取引をカテゴリ別にボタン化しています。カードをクリック → 日付・金額を入力 → 自動で借方/貸方が記帳されます。
+      </p>
+      <div id="templates-container">
+        <div class="loading">読み込み中…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bank import -->
+  <div class="panel" id="panel-bank">
+    <div class="card">
+      <h2>銀行明細を貼り付け</h2>
+      <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--s2) 0;">
+        オンラインバンキングの明細をCSV / TSV形式でコピー＆ペーストしてください。<br>
+        列は自動判定します（日付・摘要・入金・出金 の順、もしくは 日付・摘要・金額）。
+      </p>
+      <textarea id="bank-textarea" placeholder="例：
+2026-01-15	A社振込	330000	
+2026-01-16	家賃	  	85000
+2026-01-20	クラウド代	  	4800"></textarea>
+      <div style="margin-top: var(--s2); display:flex; gap: 8px;">
+        <button class="btn btn-primary" onclick="parseBankPaste()"><i data-lucide="scan-line" style="width:14px;height:14px;"></i> 解析してプレビュー</button>
+        <button class="btn" onclick="document.getElementById('bank-textarea').value=''">クリア</button>
+      </div>
+    </div>
+    <div class="card" id="bank-preview-card" style="display:none;">
+      <h2>プレビュー — 勘定科目を選んで一括登録</h2>
+      <div id="bank-preview"></div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="commitBank()"><i data-lucide="check" style="width:14px;height:14px;"></i> すべて仕訳登録</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Journal -->
+  <div class="panel" id="panel-journal">
+    <div class="card">
+      <h2>仕訳帳 <span style="font-family:var(--sans); font-size:11px; font-weight:400; color:var(--text-muted);">JOURNAL</span></h2>
+      <div class="toolbar">
+        <label style="font-size:12px;color:var(--text-muted);">期間</label>
+        <input type="date" id="j-from" />
+        <span>〜</span>
+        <input type="date" id="j-to" />
+        <button class="btn btn-sm" onclick="loadJournal()">絞込</button>
+        <div class="spacer"></div>
+        <button class="btn btn-sm" onclick="exportJournalCSV()"><i data-lucide="download" style="width:12px;height:12px;"></i> CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table class="ledger" id="journal-table">
+          <thead>
+            <tr>
+              <th style="width:100px;">日付</th>
+              <th>摘要</th>
+              <th>借方</th>
+              <th>貸方</th>
+              <th class="num" style="width:120px;">金額</th>
+              <th style="width:90px;"></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- General ledger -->
+  <div class="panel" id="panel-ledger">
+    <div class="card">
+      <h2>総勘定元帳 <span style="font-family:var(--sans); font-size:11px; font-weight:400; color:var(--text-muted);">GENERAL LEDGER</span></h2>
+      <div class="toolbar" style="align-items: flex-start;">
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <label style="font-size:12px;color:var(--text-muted);">勘定科目（複数選択可・Ctrl/⌘+クリック）</label>
+          <select id="ledger-account" multiple size="6"
+                  style="padding: 6px 10px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); border-radius: 4px; font-family: inherit; min-width: 260px; height: 150px;"></select>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-sm" onclick="selectAllAccounts()">全選択</button>
+            <button class="btn btn-sm" onclick="clearAccountSelection()">選択解除</button>
+            <button class="btn btn-sm" onclick="selectByCategoryPrompt('asset')">資産のみ</button>
+            <button class="btn btn-sm" onclick="selectByCategoryPrompt('expense')">経費のみ</button>
+            <button class="btn btn-sm" onclick="selectByCategoryPrompt('revenue')">収益のみ</button>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px; margin-left: 16px;">
+          <label style="font-size:12px;color:var(--text-muted);">期間</label>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <input type="date" id="ledger-from" />
+            <span>〜</span>
+            <input type="date" id="ledger-to" />
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-sm" onclick="setLedgerPeriodYear()">年間</button>
+            <button class="btn btn-sm" onclick="setLedgerPeriodQuarter(1)">Q1</button>
+            <button class="btn btn-sm" onclick="setLedgerPeriodQuarter(2)">Q2</button>
+            <button class="btn btn-sm" onclick="setLedgerPeriodQuarter(3)">Q3</button>
+            <button class="btn btn-sm" onclick="setLedgerPeriodQuarter(4)">Q4</button>
+          </div>
+        </div>
+        <div style="margin-left: 16px; display:flex; flex-direction:column; gap:6px;">
+          <label style="font-size:12px; color:transparent;">.</label>
+          <button class="btn btn-primary" onclick="loadLedger()"><i data-lucide="search" style="width:14px;height:14px;"></i> 表示</button>
+          <button class="btn btn-sm" onclick="window.print()"><i data-lucide="printer" style="width:12px;height:12px;"></i> 印刷/PDF</button>
+        </div>
+      </div>
+      <div id="ledger-results" style="margin-top: var(--s3);">
+        <div class="empty">科目と期間を指定して「表示」を押してください</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P/L Report -->
+  <div class="panel" id="panel-pl">
+    <div class="toolbar">
+      <div class="spacer"></div>
+      <button class="btn" onclick="window.print()"><i data-lucide="printer" style="width:14px;height:14px;"></i> 印刷 / PDF保存</button>
+    </div>
+    <div class="report" id="pl-report">
+      <div class="loading">読み込み中…</div>
+    </div>
+  </div>
+
+  <!-- B/S Report -->
+  <div class="panel" id="panel-bs">
+    <div class="toolbar">
+      <div class="spacer"></div>
+      <button class="btn" onclick="window.print()"><i data-lucide="printer" style="width:14px;height:14px;"></i> 印刷 / PDF保存</button>
+    </div>
+    <div class="report" id="bs-report">
+      <div class="loading">読み込み中…</div>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="panel" id="panel-settings">
+    <div class="card">
+      <h2>期首残高の設定</h2>
+      <p style="color:var(--text-muted); font-size:13px; margin:0 0 var(--s3) 0;">
+        年度開始時点（1/1）の残高を各科目に入力してください。前年から繰り越した現金・預金・売掛金・元入金などをここで設定します。
+      </p>
+      <div id="opening-balance-form">
+        <div class="loading">読み込み中…</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Simple entry modal -->
+<div class="modal-backdrop" id="entry-modal">
+  <div class="modal">
+    <h3 id="modal-title">仕訳入力</h3>
+    <div class="field">
+      <label>日付</label>
+      <input type="date" id="modal-date" />
+    </div>
+    <div class="field">
+      <label>金額（円）</label>
+      <input type="number" id="modal-amount" min="0" step="1" placeholder="0" />
+    </div>
+    <div class="field">
+      <label>摘要（メモ）</label>
+      <input type="text" id="modal-desc" placeholder="取引の内容" />
+    </div>
+    <div class="journal-preview" id="modal-preview">
+      <div class="row"><span class="lbl">借方</span><span id="prev-debit">-</span></div>
+      <div class="row"><span class="lbl">貸方</span><span id="prev-credit">-</span></div>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="submitEntry()">登録</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit entry modal -->
+<div class="modal-backdrop" id="edit-modal">
+  <div class="modal" style="max-width: 540px;">
+    <h3>仕訳の修正</h3>
+    <div class="field">
+      <label>日付</label>
+      <input type="date" id="edit-date" />
+    </div>
+    <div class="field">
+      <label>摘要</label>
+      <input type="text" id="edit-desc" placeholder="取引の内容" />
+    </div>
+    <div class="field">
+      <label>借方（科目）</label>
+      <select id="edit-debit"></select>
+    </div>
+    <div class="field">
+      <label>貸方（科目）</label>
+      <select id="edit-credit"></select>
+    </div>
+    <div class="field">
+      <label>金額（円）</label>
+      <input type="number" id="edit-amount" min="0" step="1" />
+    </div>
+    <p style="color: var(--text-muted); font-size: 12px; margin: 8px 0;">
+      ※ 複合仕訳（3行以上）はこの画面では編集できません。削除して再作成してください。
+    </p>
+    <div class="actions">
+      <button class="btn" onclick="closeEditModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="submitEditEntry()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ============ Global state ============
+  let currentFY = 2026;
+  let templates = [];
+  let accounts = [];
+  let selectedTemplate = null;
+  let bankParsed = [];
+  let monthlyChart = null;
+
+  // ============ Local API client (Flask backend) ============
+  async function api(path, opts = {}) {
+    const url = path.startsWith('/api/') ? path : '/api/' + path;
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+      ...opts,
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(errText || `HTTP ${res.status}`);
+    }
+    return res.json();
+  }
+  function qs(params) {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== null && v !== undefined && v !== '') p.append(k, v);
+    }
+    return p.toString();
+  }
+
+  // ============ Utilities ============
+  const yen = (n) => {
+    const num = Number(n || 0);
+    return '¥ ' + Math.round(num).toLocaleString('ja-JP');
+  };
+  const yenPlain = (n) => Math.round(Number(n || 0)).toLocaleString('ja-JP');
+  const escapeHTML = (str) => { const d = document.createElement('div'); d.textContent = str == null ? '' : String(str); return d.innerHTML; };
+  const today = () => new Date().toISOString().slice(0, 10);
+  function toast(msg, isErr) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.toggle('error', !!isErr);
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ============ Init ============
+  async function init() {
+    console.log('[init] starting');
+    try {
+      document.getElementById('fy-select').value = String(currentFY);
+      document.getElementById('fy-select').addEventListener('change', (e) => {
+        currentFY = parseInt(e.target.value, 10);
+        loadCurrentTab();
+      });
+      document.querySelectorAll('.tab').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      });
+      const [tpl, acc] = await Promise.all([
+        api('/api/templates'),
+        api('/api/accounts')
+      ]);
+      templates = tpl;
+      accounts = acc;
+      console.log('[data] templates', templates.length, 'accounts', accounts.length);
+      renderTemplates();
+      populateAccountSelector();
+      await loadDashboard();
+      document.getElementById('j-from').value = `${currentFY}-01-01`;
+      document.getElementById('j-to').value = `${currentFY}-12-31`;
+      lucide.createIcons();
+      console.log('[init] ready');
+    } catch (e) {
+      console.error('[error]', e.message, e);
+      toast('初期化エラー: ' + e.message, true);
+    }
+  }
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+    if (name === 'dashboard') loadDashboard();
+    if (name === 'journal') loadJournal();
+    if (name === 'ledger') loadLedger();
+    if (name === 'pl') loadPL();
+    if (name === 'bs') loadBS();
+    if (name === 'settings') loadOpeningBalances();
+    lucide.createIcons();
+  }
+  function loadCurrentTab() {
+    const active = document.querySelector('.tab.active').dataset.tab;
+    switchTab(active);
+  }
+
+  // ============ Dashboard ============
+  async function loadDashboard() {
+    try {
+      const [s, mon] = await Promise.all([
+        api('/api/dashboard/summary?' + qs({ fiscal_year: currentFY })),
+        api('/api/dashboard/monthly?' + qs({ fiscal_year: currentFY })),
+      ]);
+      document.getElementById('kpi-revenue').textContent = yen(s.total_revenue);
+      document.getElementById('kpi-expense').textContent = yen(s.total_expense);
+      const ni = Number(s.net_income || 0);
+      const niEl = document.getElementById('kpi-income');
+      niEl.textContent = yen(ni);
+      niEl.className = 'kpi-value ' + (ni >= 0 ? 'pos' : 'neg');
+      document.getElementById('kpi-entries').textContent = s.entry_count || 0;
+      const labels = mon.map(r => r.month.slice(5) + '月');
+      const revs = mon.map(r => Number(r.revenue || 0));
+      const exps = mon.map(r => Number(r.expense || 0));
+      const ctx = document.getElementById('monthly-chart').getContext('2d');
+      if (monthlyChart) monthlyChart.destroy();
+      const style = getComputedStyle(document.body);
+      const textColor = style.getPropertyValue('--text').trim();
+      const mutedColor = style.getPropertyValue('--text-muted').trim();
+      const borderColor = style.getPropertyValue('--border').trim();
+      monthlyChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: '売上', data: revs, backgroundColor: 'rgba(47,107,58,0.75)', borderRadius: 3 },
+            { label: '経費', data: exps, backgroundColor: 'rgba(168,50,50,0.7)', borderRadius: 3 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: textColor, font: { family: getComputedStyle(document.body).fontFamily } } },
+            tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + yen(c.parsed.y) } }
+          },
+          scales: {
+            x: { ticks: { color: mutedColor }, grid: { color: borderColor } },
+            y: { ticks: { color: mutedColor, callback: (v) => '¥' + Number(v).toLocaleString() }, grid: { color: borderColor } }
+          }
+        }
+      });
+    } catch (e) {
+      console.error('[error] dashboard', e);
+      toast('ダッシュボード読込失敗: ' + e.message, true);
+    }
+  }
+
+  // ============ Templates ============
+  function renderTemplates() {
+    const container = document.getElementById('templates-container');
+    const byCat = {};
+    templates.forEach(t => {
+      if (!byCat[t.category]) byCat[t.category] = [];
+      byCat[t.category].push(t);
+    });
+    container.innerHTML = '';
+    Object.keys(byCat).forEach(cat => {
+      const div = document.createElement('div');
+      div.className = 'template-category';
+      div.innerHTML = `<h3>${escapeHTML(cat)}</h3><div class="template-grid"></div>`;
+      const grid = div.querySelector('.template-grid');
+      byCat[cat].forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = 'template-btn';
+        btn.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="tpl-icon"><i data-lucide="${escapeHTML(t.icon || 'circle')}"></i></div>
+            <span class="tpl-label">${escapeHTML(t.label)}</span>
+          </div>
+          <div class="tpl-detail">借方: ${escapeHTML(t.debit_name || '?')} / 貸方: ${escapeHTML(t.credit_name || '?')}</div>
+        `;
+        btn.onclick = () => openModal(t);
+        grid.appendChild(btn);
+      });
+      container.appendChild(div);
+    });
+    lucide.createIcons();
+  }
+
+  function openModal(t) {
+    selectedTemplate = t;
+    document.getElementById('modal-title').textContent = t.label;
+    document.getElementById('modal-date').value = today();
+    document.getElementById('modal-amount').value = '';
+    document.getElementById('modal-desc').value = t.default_description || '';
+    document.getElementById('prev-debit').textContent = t.debit_name || '';
+    document.getElementById('prev-credit').textContent = t.credit_name || '';
+    document.getElementById('entry-modal').classList.add('show');
+    setTimeout(() => document.getElementById('modal-amount').focus(), 100);
+  }
+  function closeModal() {
+    document.getElementById('entry-modal').classList.remove('show');
+    selectedTemplate = null;
+  }
+  async function submitEntry() {
+    if (!selectedTemplate) return;
+    const date = document.getElementById('modal-date').value;
+    const amount = parseInt(document.getElementById('modal-amount').value, 10);
+    const desc = document.getElementById('modal-desc').value.trim() || selectedTemplate.default_description || selectedTemplate.label;
+    if (!date || !amount || amount <= 0) { toast('日付と金額を入力してください', true); return; }
+    try {
+      await api('/api/entries', {
+        method: 'POST',
+        body: JSON.stringify({
+          entry_date: date, description: desc,
+          debit_account: selectedTemplate.debit_account,
+          credit_account: selectedTemplate.credit_account,
+          amount, fiscal_year: currentFY, source: 'simple'
+        })
+      });
+      toast('仕訳を登録しました');
+      closeModal();
+      loadDashboard();
+    } catch (e) {
+      toast('登録失敗: ' + e.message, true);
+    }
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { closeModal(); closeEditModal(); }
+  });
+
+  // ============ Bank Import ============
+  function parseBankPaste() {
+    const text = document.getElementById('bank-textarea').value.trim();
+    if (!text) { toast('明細を貼り付けてください', true); return; }
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    const parsed = [];
+    for (const line of lines) {
+      const cells = line.split(/\t|,|\s{2,}/).map(c => c.trim()).filter(c => c !== '');
+      if (cells.length < 2) continue;
+      const dateMatch = cells[0].match(/(\d{4})[-\/年]?(\d{1,2})[-\/月]?(\d{1,2})/);
+      if (!dateMatch) continue;
+      const d = `${dateMatch[1]}-${String(dateMatch[2]).padStart(2,'0')}-${String(dateMatch[3]).padStart(2,'0')}`;
+      const nums = []; const nonNums = [];
+      for (let i = 1; i < cells.length; i++) {
+        const n = cells[i].replace(/[¥,円\s]/g, '');
+        if (/^-?\d+$/.test(n)) nums.push(parseInt(n, 10));
+        else nonNums.push(cells[i]);
+      }
+      let deposit = 0, withdraw = 0;
+      if (nums.length >= 2) {
+        deposit = nums[0] || 0;
+        withdraw = nums[1] || 0;
+      } else if (nums.length === 1) {
+        const amt = nums[0];
+        const desc = nonNums.join(' ');
+        if (/振込|入金|売上|報酬|受取|返金|還付/.test(desc)) deposit = Math.abs(amt);
+        else withdraw = Math.abs(amt);
+      }
+      const desc = nonNums.join(' ') || '（摘要なし）';
+      parsed.push({ date: d, desc, deposit, withdraw });
+    }
+    if (parsed.length === 0) { toast('明細の解析に失敗しました。日付・摘要・金額の順で並んでいますか？', true); return; }
+    bankParsed = parsed;
+    renderBankPreview();
+    document.getElementById('bank-preview-card').style.display = 'block';
+    lucide.createIcons();
+  }
+
+  function suggestAccount(row) {
+    const d = row.desc || '';
+    if (row.deposit > 0) {
+      return { debit: '1121', credit: '4110' };
+    } else {
+      if (/家賃|賃料|地代/.test(d)) return { debit: '5260', credit: '1121' };
+      if (/電気|ガス|水道|光熱/.test(d)) return { debit: '5130', credit: '1121' };
+      if (/携帯|通信|ネット|プロバイダ|NTT|ドコモ|au|ソフトバンク|楽天モバイル/.test(d)) return { debit: '5150', credit: '1121' };
+      if (/交通|電車|バス|タクシー|JR|新幹線|Suica|PASMO|駅|地下鉄|メトロ/.test(d)) return { debit: '5140', credit: '1121' };
+      if (/AWS|Google|Azure|GitHub|Adobe|Notion|Slack|Zoom|Figma|SaaS|クラウド/.test(d)) return { debit: '5200', credit: '1121' };
+      if (/保険/.test(d)) return { debit: '5180', credit: '1121' };
+      if (/手数料/.test(d)) return { debit: '5300', credit: '1121' };
+      if (/税|納付/.test(d)) return { debit: '5110', credit: '1121' };
+      if (/広告|宣伝/.test(d)) return { debit: '5160', credit: '1121' };
+      if (/外注|委託/.test(d)) return { debit: '5240', credit: '1121' };
+      if (/書籍|本|Amazon.*Kindle/.test(d)) return { debit: '5290', credit: '1121' };
+      if (/事業主|自分/.test(d)) return { debit: '1310', credit: '1121' };
+      return { debit: '5320', credit: '1121' };
+    }
+  }
+
+  function renderBankPreview() {
+    const el = document.getElementById('bank-preview');
+    let html = `<div class="bank-preview-row header">
+      <div>日付</div><div>摘要</div><div>入金</div><div>出金</div><div>勘定科目</div><div></div>
+    </div>`;
+    bankParsed.forEach((r, idx) => {
+      if (r.skip) return;
+      const suggest = suggestAccount(r);
+      r.debit_account = suggest.debit;
+      r.credit_account = suggest.credit;
+      const isIncome = r.deposit > 0;
+      const accountToPick = isIncome ? 'credit' : 'debit';
+      const currentAcc = isIncome ? r.credit_account : r.debit_account;
+      html += `<div class="bank-preview-row">
+        <div>${escapeHTML(r.date)}</div>
+        <div>${escapeHTML(r.desc)}</div>
+        <div class="num">${r.deposit ? '<span class="badge in">+' + yenPlain(r.deposit) + '</span>' : ''}</div>
+        <div class="num">${r.withdraw ? '<span class="badge out">-' + yenPlain(r.withdraw) + '</span>' : ''}</div>
+        <div>
+          <select data-idx="${idx}" data-side="${accountToPick}" onchange="updateBankRowAccount(this)">
+            ${accounts.map(a => `<option value="${a.code}" ${a.code === currentAcc ? 'selected' : ''}>${escapeHTML(a.code)} ${escapeHTML(a.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div><button class="btn btn-sm" onclick="skipBankRow(${idx})" title="除外">×</button></div>
+      </div>`;
+    });
+    el.innerHTML = html;
+  }
+  function updateBankRowAccount(sel) {
+    const idx = parseInt(sel.dataset.idx, 10);
+    const side = sel.dataset.side;
+    bankParsed[idx][side + '_account'] = sel.value;
+  }
+  function skipBankRow(idx) {
+    bankParsed[idx].skip = true;
+    renderBankPreview();
+  }
+  async function commitBank() {
+    const rows = bankParsed.filter(r => !r.skip);
+    if (rows.length === 0) { toast('登録する明細がありません', true); return; }
+    let ok = 0, ng = 0;
+    for (const r of rows) {
+      const amount = r.deposit > 0 ? r.deposit : r.withdraw;
+      if (!amount) continue;
+      try {
+        await api('/api/entries', {
+          method: 'POST',
+          body: JSON.stringify({
+            entry_date: r.date, description: r.desc,
+            debit_account: r.debit_account, credit_account: r.credit_account,
+            amount, fiscal_year: currentFY, source: 'bank_import'
+          })
+        });
+        ok++;
+      } catch (e) { ng++; console.error(e); }
+    }
+    toast(`${ok}件を登録しました${ng > 0 ? '（失敗' + ng + '件）' : ''}`);
+    document.getElementById('bank-textarea').value = '';
+    document.getElementById('bank-preview-card').style.display = 'none';
+    bankParsed = [];
+    loadDashboard();
+  }
+
+  // ============ Journal ============
+  async function loadJournal() {
+    try {
+      const from = document.getElementById('j-from').value || null;
+      const to = document.getElementById('j-to').value || null;
+      const rows = await api('/api/journal?' + qs({ fiscal_year: currentFY, date_from: from, date_to: to }));
+      const tbody = document.querySelector('#journal-table tbody');
+      if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty">仕訳がありません</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td class="date">${escapeHTML(r.entry_date)}</td>
+          <td class="desc">${escapeHTML(r.description)}</td>
+          <td class="debit">${escapeHTML(r.debit_summary || '')}</td>
+          <td class="credit">${escapeHTML(r.credit_summary || '')}</td>
+          <td class="num">${yenPlain(r.amount)}</td>
+          <td style="white-space:nowrap;">
+            <span class="del" onclick="editEntry(${r.id})" title="修正" style="margin-right:8px;"><i data-lucide="pencil" style="width:14px;height:14px;"></i></span>
+            <span class="del" onclick="deleteEntry(${r.id})" title="削除"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></span>
+          </td>
+        </tr>
+      `).join('');
+      lucide.createIcons();
+    } catch (e) {
+      toast('仕訳帳読込失敗: ' + e.message, true);
+    }
+  }
+  async function deleteEntry(id) {
+    if (!confirm('この仕訳を削除しますか？')) return;
+    try {
+      await api('/api/entries/' + id, { method: 'DELETE' });
+      toast('削除しました');
+      loadJournal();
+    } catch (e) {
+      toast('削除失敗: ' + e.message, true);
+    }
+  }
+  function exportJournalCSV() {
+    const rows = [['日付','摘要','借方','貸方','金額']];
+    document.querySelectorAll('#journal-table tbody tr').forEach(tr => {
+      const tds = tr.querySelectorAll('td');
+      if (tds.length < 5) return;
+      rows.push([tds[0].textContent, tds[1].textContent, tds[2].textContent, tds[3].textContent, tds[4].textContent.replace(/,/g,'')]);
+    });
+    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `仕訳帳_${currentFY}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ============ Ledger (multi-account + date range) ============
+  function populateAccountSelector() {
+    const sel = document.getElementById('ledger-account');
+    // カテゴリで見出し行（optgroup）
+    const catLabel = {
+      asset: '資産', liability: '負債', equity: '資本',
+      revenue: '収益', expense: '費用'
+    };
+    const byCat = {};
+    accounts.forEach(a => {
+      if (!byCat[a.category]) byCat[a.category] = [];
+      byCat[a.category].push(a);
+    });
+    let html = '';
+    ['asset','liability','equity','revenue','expense'].forEach(cat => {
+      if (!byCat[cat]) return;
+      html += `<optgroup label="${catLabel[cat]}">`;
+      byCat[cat].forEach(a => {
+        html += `<option value="${a.code}" data-category="${a.category}">${escapeHTML(a.code)} ${escapeHTML(a.name)}</option>`;
+      });
+      html += '</optgroup>';
+    });
+    sel.innerHTML = html;
+    // ledger の日付初期値
+    document.getElementById('ledger-from').value = `${currentFY}-01-01`;
+    document.getElementById('ledger-to').value = `${currentFY}-12-31`;
+  }
+
+  function selectAllAccounts() {
+    const sel = document.getElementById('ledger-account');
+    Array.from(sel.options).forEach(o => o.selected = true);
+  }
+  function clearAccountSelection() {
+    const sel = document.getElementById('ledger-account');
+    Array.from(sel.options).forEach(o => o.selected = false);
+  }
+  function selectByCategoryPrompt(cat) {
+    const sel = document.getElementById('ledger-account');
+    Array.from(sel.options).forEach(o => {
+      o.selected = (o.dataset.category === cat);
+    });
+  }
+  function setLedgerPeriodYear() {
+    document.getElementById('ledger-from').value = `${currentFY}-01-01`;
+    document.getElementById('ledger-to').value = `${currentFY}-12-31`;
+  }
+  function setLedgerPeriodQuarter(q) {
+    const monthStart = (q-1) * 3 + 1;
+    const monthEnd = q * 3;
+    const daysEnd = new Date(currentFY, monthEnd, 0).getDate();
+    document.getElementById('ledger-from').value = `${currentFY}-${String(monthStart).padStart(2,'0')}-01`;
+    document.getElementById('ledger-to').value = `${currentFY}-${String(monthEnd).padStart(2,'0')}-${String(daysEnd).padStart(2,'0')}`;
+  }
+
+  async function loadLedger() {
+    const container = document.getElementById('ledger-results');
+    const sel = document.getElementById('ledger-account');
+    const selected = Array.from(sel.selectedOptions).map(o => o.value);
+    if (selected.length === 0) {
+      container.innerHTML = '<div class="empty">科目を1つ以上選択してください</div>';
+      return;
+    }
+    const from = document.getElementById('ledger-from').value || null;
+    const to = document.getElementById('ledger-to').value || null;
+    container.innerHTML = '<div class="loading">読み込み中…</div>';
+    try {
+      const groups = await api('/api/ledger?' + qs({
+        account_codes: selected.join(','),
+        fiscal_year: currentFY,
+        date_from: from, date_to: to
+      }));
+      if (groups.length === 0) {
+        container.innerHTML = '<div class="empty">該当データがありません</div>';
+        return;
+      }
+      // 集計行
+      let grandDebit = 0, grandCredit = 0;
+      groups.forEach(g => g.rows.forEach(r => { grandDebit += r.debit; grandCredit += r.credit; }));
+      const periodLabel = (from || to) ? `期間: ${from || '(期首)'} 〜 ${to || '(期末)'}` : '期間: 年間';
+
+      container.innerHTML = `
+        <div style="padding: 12px 16px; background: var(--bg-soft); border-radius: 4px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+          <div>
+            <b>${groups.length}科目</b> を表示中 · ${escapeHTML(periodLabel)}
+          </div>
+          <div style="color: var(--text-muted);">
+            借方合計: <b class="num">${yenPlain(grandDebit)}</b>  ／  貸方合計: <b class="num">${yenPlain(grandCredit)}</b>
+          </div>
+        </div>
+        ${groups.map(g => renderLedgerGroup(g)).join('')}
+      `;
+      lucide.createIcons();
+    } catch (e) {
+      container.innerHTML = '<div class="empty">読込失敗: ' + escapeHTML(e.message) + '</div>';
+    }
+  }
+
+  function renderLedgerGroup(g) {
+    const catLabel = {
+      asset: '資産', liability: '負債', equity: '資本',
+      revenue: '収益', expense: '費用'
+    };
+    const cat = catLabel[g.account.category] || '';
+    const totalDebit = g.rows.reduce((s, r) => s + Number(r.debit || 0), 0);
+    const totalCredit = g.rows.reduce((s, r) => s + Number(r.credit || 0), 0);
+    if (g.rows.length === 0) {
+      return `
+        <div class="ledger-group" style="margin-bottom: 24px;">
+          <h3 style="display:flex; align-items:baseline; gap:10px; margin: 0 0 8px 0; padding-bottom: 6px; border-bottom: 2px solid var(--border-strong);">
+            <span style="font-family: var(--serif); font-size: 16px;">${escapeHTML(g.account.code)} ${escapeHTML(g.account.name)}</span>
+            <span style="font-size: 11px; color: var(--text-muted); letter-spacing: 0.05em;">${escapeHTML(cat)}</span>
+          </h3>
+          <div class="empty" style="padding: 16px;">この期間の取引はありません（期首残高: ${yenPlain(g.opening)} 円）</div>
+        </div>
+      `;
+    }
+    return `
+      <div class="ledger-group" style="margin-bottom: 24px;">
+        <h3 style="display:flex; align-items:baseline; gap:10px; margin: 0 0 8px 0; padding-bottom: 6px; border-bottom: 2px solid var(--border-strong);">
+          <span style="font-family: var(--serif); font-size: 16px;">${escapeHTML(g.account.code)} ${escapeHTML(g.account.name)}</span>
+          <span style="font-size: 11px; color: var(--text-muted); letter-spacing: 0.05em;">${escapeHTML(cat)}</span>
+          <span style="margin-left:auto; font-size:12px; color: var(--text-muted);">
+            期首 ${yenPlain(g.opening)} → 期末 <b>${yenPlain(g.closing)}</b>
+          </span>
+        </h3>
+        <div class="table-wrap">
+          <table class="ledger">
+            <thead>
+              <tr>
+                <th style="width:100px;">日付</th>
+                <th>摘要</th>
+                <th>相手科目</th>
+                <th class="num" style="width:110px;">借方</th>
+                <th class="num" style="width:110px;">貸方</th>
+                <th class="num" style="width:130px;">残高</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background: var(--bg-soft);">
+                <td colspan="5" style="color: var(--text-muted); font-size: 12px;">期首残高</td>
+                <td class="num" style="color: var(--text-muted);">${yenPlain(g.opening)}</td>
+              </tr>
+              ${g.rows.map(r => `
+                <tr>
+                  <td class="date">${escapeHTML(r.entry_date)}</td>
+                  <td class="desc">${escapeHTML(r.description)}</td>
+                  <td>${escapeHTML(r.counter_account || '')}</td>
+                  <td class="num">${r.debit ? yenPlain(r.debit) : ''}</td>
+                  <td class="num">${r.credit ? yenPlain(r.credit) : ''}</td>
+                  <td class="num">${yenPlain(r.running_balance)}</td>
+                </tr>
+              `).join('')}
+              <tr style="background: var(--bg-soft); font-weight: 600;">
+                <td colspan="3" style="text-align: right;">合計</td>
+                <td class="num">${yenPlain(totalDebit)}</td>
+                <td class="num">${yenPlain(totalCredit)}</td>
+                <td class="num">${yenPlain(g.closing)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ Edit journal entry ============
+  let editingEntryId = null;
+  async function editEntry(id) {
+    try {
+      const entry = await api('/api/entries/' + id);
+      if (entry.lines.length !== 2) {
+        toast('複合仕訳（3行以上）はここでは編集できません。削除して再作成してください。', true);
+        return;
+      }
+      editingEntryId = id;
+      document.getElementById('edit-date').value = entry.entry_date;
+      document.getElementById('edit-desc').value = entry.description || '';
+      // 借方/貸方の科目選択肢を全科目で埋める
+      const opts = accounts.map(a => `<option value="${a.code}">${escapeHTML(a.code)} ${escapeHTML(a.name)}</option>`).join('');
+      const debitSel = document.getElementById('edit-debit');
+      const creditSel = document.getElementById('edit-credit');
+      debitSel.innerHTML = opts;
+      creditSel.innerHTML = opts;
+      const debitLine = entry.lines.find(l => l.side === 'debit');
+      const creditLine = entry.lines.find(l => l.side === 'credit');
+      debitSel.value = debitLine.account_code;
+      creditSel.value = creditLine.account_code;
+      document.getElementById('edit-amount').value = debitLine.amount;
+      document.getElementById('edit-modal').classList.add('show');
+      setTimeout(() => document.getElementById('edit-desc').focus(), 100);
+    } catch (e) {
+      toast('読込失敗: ' + e.message, true);
+    }
+  }
+  function closeEditModal() {
+    document.getElementById('edit-modal').classList.remove('show');
+    editingEntryId = null;
+  }
+  async function submitEditEntry() {
+    if (!editingEntryId) return;
+    const date = document.getElementById('edit-date').value;
+    const desc = document.getElementById('edit-desc').value.trim();
+    const debit_account = document.getElementById('edit-debit').value;
+    const credit_account = document.getElementById('edit-credit').value;
+    const amount = parseInt(document.getElementById('edit-amount').value, 10);
+    if (!date || !desc || !amount || amount <= 0) { toast('日付・摘要・金額は必須です', true); return; }
+    if (debit_account === credit_account) { toast('借方と貸方は別の科目を選んでください', true); return; }
+    try {
+      await api('/api/entries/' + editingEntryId, {
+        method: 'PATCH',
+        body: JSON.stringify({ entry_date: date, description: desc, debit_account, credit_account, amount })
+      });
+      toast('修正しました');
+      closeEditModal();
+      loadJournal();
+      loadDashboard();
+    } catch (e) {
+      toast('修正失敗: ' + e.message, true);
+    }
+  }
+
+  // ============ P/L Report ============
+  async function loadPL() {
+    try {
+      const rows = await api('/api/reports/pl?' + qs({ fiscal_year: currentFY }));
+      const revenues = rows.filter(r => r.category === 'revenue');
+      const expenses = rows.filter(r => r.category === 'expense');
+      const sumRev = revenues.reduce((a, r) => a + Number(r.balance || 0), 0);
+      const sumExp = expenses.reduce((a, r) => a + Number(r.balance || 0), 0);
+      const income = sumRev - sumExp;
+      const el = document.getElementById('pl-report');
+      el.innerHTML = `
+        <div class="report-header">
+          <div class="report-title">損 益 計 算 書</div>
+          <div class="report-sub">令和${currentFY - 2018}年 1月 1日 〜 令和${currentFY - 2018}年 12月 31日</div>
+        </div>
+        <div class="section-title">売 上（収入）金 額</div>
+        <table>
+          ${revenues.length === 0 ? '<tr><td colspan="2" style="text-align:center;color:#888;padding:16px;">記載事項なし</td></tr>' :
+            revenues.map(r => `<tr><td>${escapeHTML(r.name)}</td><td class="num">${yenPlain(r.balance)}</td></tr>`).join('')}
+          <tr class="total"><td>売上（収入）金額 計</td><td class="num">${yenPlain(sumRev)}</td></tr>
+        </table>
+        <div class="section-title">経　　費</div>
+        <table>
+          ${expenses.length === 0 ? '<tr><td colspan="2" style="text-align:center;color:#888;padding:16px;">記載事項なし</td></tr>' :
+            expenses.map(r => `<tr><td>${escapeHTML(r.name)}</td><td class="num">${yenPlain(r.balance)}</td></tr>`).join('')}
+          <tr class="total"><td>経費 計</td><td class="num">${yenPlain(sumExp)}</td></tr>
+        </table>
+        <div class="section-title">所 得 金 額</div>
+        <table>
+          <tr><td>差引金額（売上 − 経費）</td><td class="num">${yenPlain(income)}</td></tr>
+          <tr><td>青色申告特別控除額</td><td class="num">▲ 650,000</td></tr>
+          <tr class="total"><td>所 得 金 額</td><td class="num">${yenPlain(Math.max(0, income - 650000))}</td></tr>
+        </table>
+        <div class="signature">
+          ※ 青色申告特別控除65万円の適用には、e-Tax による電子申告または優良な電子帳簿保存が必要です。<br>
+          出力日: ${new Date().toLocaleDateString('ja-JP')}
+        </div>
+      `;
+    } catch (e) {
+      document.getElementById('pl-report').innerHTML = '<div class="empty">読込失敗: ' + escapeHTML(e.message) + '</div>';
+    }
+  }
+
+  // ============ B/S Report ============
+  async function loadBS() {
+    try {
+      const rows = await api('/api/reports/bs?' + qs({ fiscal_year: currentFY }));
+      const assets = rows.filter(r => r.category === 'asset');
+      const liabs  = rows.filter(r => r.category === 'liability');
+      const eqs    = rows.filter(r => r.category === 'equity');
+      const netIncome = Number(rows[0]?.net_income || 0);
+      const assetTotal = assets.reduce((a, r) => a + Number(r.closing || 0), 0);
+      const liabTotal  = liabs.reduce((a, r) => a + Number(r.closing || 0), 0);
+      const eqTotal    = eqs.reduce((a, r) => a + Number(r.closing || 0), 0);
+      const eqPlusIncome = eqTotal + netIncome;
+      const rightTotal = liabTotal + eqPlusIncome;
+      const nonZero = (arr) => arr.filter(r => Number(r.opening || 0) !== 0 || Number(r.closing || 0) !== 0);
+      const assetsShown = nonZero(assets);
+      const liabsShown = nonZero(liabs);
+      const eqsShown = nonZero(eqs);
+      const renderRows = (arr) => arr.map(r => `
+        <tr>
+          <td>${escapeHTML(r.name)}</td>
+          <td class="num">${yenPlain(r.opening)}</td>
+          <td class="num">${yenPlain(r.closing)}</td>
+        </tr>
+      `).join('');
+      const el = document.getElementById('bs-report');
+      el.innerHTML = `
+        <div class="report-header">
+          <div class="report-title">貸 借 対 照 表</div>
+          <div class="report-sub">令和${currentFY - 2018}年 12月 31日 現在</div>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+          <div>
+            <div class="section-title">資 産 の 部</div>
+            <table>
+              <thead><tr><td style="font-weight:600;">科目</td><td class="num" style="font-weight:600;">期首</td><td class="num" style="font-weight:600;">期末</td></tr></thead>
+              ${assetsShown.length === 0 ? '<tr><td colspan="3" style="text-align:center;color:#888;padding:12px;">記載事項なし</td></tr>' : renderRows(assetsShown)}
+              <tr class="total"><td>資産合計</td><td class="num">${yenPlain(assets.reduce((a,r)=>a+Number(r.opening||0),0))}</td><td class="num">${yenPlain(assetTotal)}</td></tr>
+            </table>
+          </div>
+          <div>
+            <div class="section-title">負 債・資 本 の 部</div>
+            <table>
+              <thead><tr><td style="font-weight:600;">科目</td><td class="num" style="font-weight:600;">期首</td><td class="num" style="font-weight:600;">期末</td></tr></thead>
+              ${liabsShown.length === 0 ? '' : renderRows(liabsShown)}
+              ${liabsShown.length > 0 ? `<tr><td colspan="3" style="padding-top:4px;"></td></tr>` : ''}
+              ${eqsShown.length === 0 ? '' : renderRows(eqsShown)}
+              <tr><td>青色申告特別控除前の所得金額</td><td class="num">—</td><td class="num">${yenPlain(netIncome)}</td></tr>
+              <tr class="total"><td>負債・資本合計</td><td class="num">${yenPlain(liabs.reduce((a,r)=>a+Number(r.opening||0),0)+eqs.reduce((a,r)=>a+Number(r.opening||0),0))}</td><td class="num">${yenPlain(rightTotal)}</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="signature" style="margin-top:24px;">
+          差額: ${yenPlain(assetTotal - rightTotal)} 円
+          ${Math.abs(assetTotal - rightTotal) > 1 ? '<br><span style="color:#a83232;">※ 資産と負債・資本が一致していません。期首残高または仕訳を確認してください。</span>' : ' ✓ 貸借一致'}
+          <br>出力日: ${new Date().toLocaleDateString('ja-JP')}
+        </div>
+      `;
+    } catch (e) {
+      document.getElementById('bs-report').innerHTML = '<div class="empty">読込失敗: ' + escapeHTML(e.message) + '</div>';
+    }
+  }
+
+  // ============ Opening balances ============
+  async function loadOpeningBalances() {
+    try {
+      const rows = await api('/api/opening_balances?' + qs({ fiscal_year: currentFY }));
+      const assets = rows.filter(r => r.category === 'asset');
+      const liabs = rows.filter(r => r.category === 'liability');
+      const eqs = rows.filter(r => r.category === 'equity');
+      const container = document.getElementById('opening-balance-form');
+      const renderTable = (title, arr) => `
+        <h3 style="margin-top:16px;">${title}</h3>
+        <table class="ob-table">
+          ${arr.map(r => `
+            <tr>
+              <td style="width:60px; color:var(--text-muted); font-size:12px;">${escapeHTML(r.code)}</td>
+              <td>${escapeHTML(r.name)}</td>
+              <td style="text-align:right;">
+                <input type="number" step="1" value="${r.amount || 0}" data-code="${escapeHTML(r.code)}" onchange="saveOpeningBalance(this)"/>
+              </td>
+            </tr>
+          `).join('')}
+        </table>
+      `;
+      container.innerHTML = `
+        ${renderTable('資産 (期首残高)', assets)}
+        ${renderTable('負債 (期首残高)', liabs)}
+        ${renderTable('資本 (期首残高)', eqs)}
+        <p style="color:var(--text-muted); font-size:12px; margin-top:16px;">
+          変更は自動保存されます。開業初年度の場合は元入金にすべての開始資金の合計を入力してください。
+        </p>
+      `;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  async function saveOpeningBalance(input) {
+    const code = input.dataset.code;
+    const amount = parseInt(input.value || '0', 10);
+    try {
+      await api('/api/opening_balances', {
+        method: 'POST',
+        body: JSON.stringify({ account_code: code, fiscal_year: currentFY, amount })
+      });
+      input.style.background = 'rgba(47,107,58,0.15)';
+      setTimeout(() => input.style.background = '', 600);
+    } catch (e) {
+      toast('保存失敗: ' + e.message, true);
+    }
+  }
+
+  init();
+</script>
+
+</body>
+</html>

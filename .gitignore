@@ -1,0 +1,29 @@
+# Virtual Environment
+venv/
+.env/
+core/migrations/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# SQLite
+bookkeeping.sqlite3
+
+# Environment variables
+.env.local
+.env.production
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# zipファイル
+*.zip
+
+# logファイル
+logs/
+*.log
