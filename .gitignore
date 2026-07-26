@@ -8,7 +8,7 @@ __pycache__/
 *.pyc
 
 # SQLite
-bookkeeping.db
+# bookkeeping.db
 
 # Environment variables
 .env.local
